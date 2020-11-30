@@ -1,0 +1,173 @@
+--Michelle Osiyah
+--maosiyah@syr.edu
+
+import PizzaShop
+
+--pt1 
+salad1, sub1, pizza1, pizza2 :: MenuItem
+
+salad1 = Salad  Greek
+
+sub1 = Sub Small Ranch
+
+pizza1 = Pizza Small Pesto [Chicken]
+
+pizza2 = Pizza Large Garlic [Pepperoni, Onions, Ham, Ham , Mushrooms]
+
+order1 :: [MenuItem]
+order1 = [Sub Large None, Salad Ranch, Pizza Large Pesto []]
+
+order2 :: [MenuItem]
+order2 = [Pizza Small Garlic  [Pepperoni, Mushrooms , Ham, Onions], Sub Large Caesar , Sub Small Greek , Pizza Large Tomato [Chicken,Mushrooms], Salad Greek]
+
+
+--pt2
+
+toppingCost :: Size -> Topping -> Float
+toppingCost Small Chicken = 2.75
+toppingCost Large Chicken = 3.25
+toppingCost Small _ = 1.50
+toppingCost Large _ = 2.25
+
+--toppingCost sz tpg returns the price of the topping tpg on a pizza of size sz.
+------------Example------------------
+--tst1 toppingCost Large  Onions evaluates to 2.25 
+--tst2 toppingCost Small Pepperoni evaluates 1.50
+--tst3 toppingCost Small Chicken = 2.75
+
+--pt3
+
+supersize :: MenuItem -> MenuItem
+supersize (Pizza Small y x) = Pizza Large y x
+supersize (Sub Small y) = Sub Large y 
+supersize y = y
+
+--supersize item returns a supersized version of item: that is, it converts small menu items into large menu items, but otherwise leaves items unchanged
+
+---------------------Example---------------------
+---tst1 supersize pizza1 evaluates Pizza Large Pesto [Chicken]
+---tst2 supersize pizza2 evaluates Pizza Large Garlic [Pepperoni,Onions,Ham,Ham,Mushrooms]
+--tst3 supersize salad1 evaluates to Salad Greek
+
+
+--pt4
+
+makeHealthier :: MenuItem -> MenuItem
+makeHealthier (Salad y) = Salad None
+makeHealthier (Sub a b) = Sub a None
+makeHealthier (Pizza a b tops) = Pizza a b (helper1 tops)
+
+helper1 :: [Topping] -> [Topping]
+helper1 [] = []
+helper1 (Pepperoni: xs) = (Chicken :helper1 xs)
+helper1 (Ham : xs) = (Chicken :helper1 xs)
+helper1 (t : xs) = (t: helper1 xs)
+
+--makeHealthier item returns a menu item that is similar to item except that any dressing (on either salads or subs) is removed
+----------------Example-------------------------
+--tst1 makeHealthier (Sub Small  Ranch) evaluates to makeHealthier (Sub Small None)
+--tst2 makeHealthier (Pizza Small Garlic [Ham,Chicken]) evaluates to Pizza Small Garlic [Chicken,Chicken]
+
+--pt5 
+
+price :: MenuItem -> Float
+price (Salad a) = 6.75
+price (Sub Large b ) = 9.50
+price (Sub Small b ) = 7.95
+price (Pizza Small b c) = 11.00 + helper2 Small  b c
+price (Pizza Large b c) = 13.50 + helper2 Large  b c
+
+helper2 :: Size ->  Sauce -> [Topping] -> Float
+helper2 Small Pesto tops  = 1.50 + helper3 Small tops
+helper2 Large Pesto tops = 2.00 +  helper3 Large tops
+helper2 Small _ tops  =  0.00 +  helper3 Small tops
+helper2 Large _ tops = 0.00 +  helper3 Large tops
+
+helper3 :: Size -> [Topping] -> Float
+helper3 Small  []  = 0.0
+helper3 Large [] = 0.0
+helper3 Large (Chicken: xs) = 3.25 + helper3  Large xs
+helper3 Small (Chicken: xs) = 2.75 + helper3 Small xs
+helper3 Large (t : xs) = 2.25 + helper3 Large  xs
+helper3 Small (t : xs) = 1.50 +  helper3 Small  xs
+
+--price item calculates the purchase price of item.
+-----------------------Example----------------------------
+--tst1 price (Sub Large Ranch)  evaluates to 9.5
+--tst2 price (Sub Small  Ranch)  evaluates to 7.95
+--tst3 price (Pizza Small Pesto [Onions,Mushrooms,Chicken,Ham,Ham]) evalutes  21.25
+
+
+--pt6
+
+willEat :: MenuItem -> Bool
+willEat (Salad Ranch) = False
+willEat (Sub _ Ranch) = False
+willEat (Pizza _ Tomato _) = False
+willEat (Pizza _ _ tops) = helper5 tops
+willEat c = True
+
+helper5 :: [Topping] -> Bool
+helper5 [] = True
+helper5 (Mushrooms: xs) = False && helper5 xs
+helper5 (t: xs) = True && helper5 xs
+
+--willEat item evaluates to True if Martha is willing to eat item
+
+-----------------Example--------------------------
+--tst1 willEat (Salad Ranch)evaluates to False
+--tst2 willEat (Pizza Small Pesto [Onions,Mushrooms,Chicken,Ham,Ham]) evaluates to False
+---tst3 willEat (Pizza Small Pesto [Onions,Mushrooms,Chicken,Ham,Ham]) evaluates to True
+
+--pt7
+
+mostToppings :: [MenuItem] -> Int
+mostToppings [] = 0
+mostToppings  menuitems = maximum ([length tops| Pizza _ _ tops <-menuitems])
+
+--given a list of menu items, returns the highest number of toppings on any pizza in that list. 
+
+--------------------------Example--------------------------------
+--tst1  mostToppings order2 evalutes to 4
+--tst2 mostToppings [pizza1,pizza2] evaluates to 5
+
+--pt8
+
+hammyPizzas :: [MenuItem ] -> Integer
+hammyPizzas [] = 0
+hammyPizzas ((Pizza _ _ tops):xs) = helper7 tops + hammyPizzas xs
+hammyPizzas (t:xs) = 0 + hammyPizzas xs
+
+helper7 :: [Topping] -> Integer
+helper7 [] = 0
+helper7 (Ham:xs) = 1 
+helper7 (t :xs) = 0 + helper7 xs
+
+-- given a list of menu items, calculates the number of pizzas in that list that contain ham.
+
+------------------------Example----------------------
+--tst1 hammyPizzas order2 evaluates to 1
+--tst2 hammyPizzas [pizza2, pizza2, pizza1, pizza2] evaluates to 3
+--tst3 hammyPizzas [pizza2,pizza1, pizza2] evaluates to 2
+
+
+--pt9
+
+promotion :: [MenuItem] -> Float
+promotion [] = 0.0
+promotion list
+    |length list == 1 = sum([price a |a <- list])
+    |otherwise = sum([price a |a <- list])- minimum ([price a| a <- list])
+
+helper8 :: [MenuItem] -> [Float]
+helper8 [] = []
+helper8 (list : xs) =          price list: helper8 xs
+
+--that computes the cost of an entire purchase, under the promotion
+-----------------Example--------------------------
+--tst1 promotion order1 evaluates to 25.0
+--tst2 promotion [Sub Small Greek] evaluates to 7.95 equivalent to price (Sub Small Greek)
+
+
+
+
