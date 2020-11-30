@@ -1,0 +1,289 @@
+
+--Michelle Osiyah
+--maosiyah@syr.edu
+
+
+import Data.List
+
+--
+-- Users, permissions, and roles are all represented by Strings.  
+--
+--     If we wanted more interesting structures, we could define them
+--     here (but we won't).
+--
+type User = String
+type Perm = String
+type Role = String
+
+
+--
+-- A user assignment (UA) is a collection of user-role pairs.
+-- A permission assignment (PA) is a collection of permission-role pairs.
+--
+type UA = [(User,Role)]
+type PA = [(Perm,Role)]
+
+-- A separation-of-duty relation is a collection of pairs of form (rs,n):
+--    each rs is itself a collection of roles
+--    each n is a "threshhold limit" of potential conflicts within 
+--           a set of roles
+
+type SSD = [([Role],Int)]
+
+
+------------------------------------------------------------------------
+--
+-- Two example scenarios
+--
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+-- Example #1
+--
+--     Here we have several individuals who belong to roles that are
+--     related to University life: professors, students, staff, tas.
+--
+--     We also associate certain permissions (think: actions or verbs)
+--     with the various roles.  These permissions include things like
+--     griping (about early morning lectures), grading (exams,
+--     homeworks, etc), sleeping in lecture, assisting people, and
+--     submitting grades to the registrar 
+
+
+-- Note that Ben belongs to both the staff and student roles, and Eve
+-- belongs to both the student and ta roles.
+ua1 :: UA
+ua1 = [("Ana","professor"), ("Ben","student"), ("Cal","professor"), 
+       ("Ben","staff"), ("Dana","staff"), ("Eve","student"), 
+       ("Eve","ta"), ("Cal","student")]
+
+--
+--  Professors can: gripe, grade, submit grades
+--  Students can: gripe, sleep (lucky students!)
+--  Staff can: assist
+--  TAs can: grade
+--
+pa1 :: PA
+pa1 = [("gripe","professor"), ("gripe","student"),
+       ("grade","professor"), ("grade","ta"), ("sleep","student"), 
+       ("assist","staff"), ("submit grades","professor")]
+
+--
+--   This static separation-of-duty relation indicates that:
+--       (i) no one can be both a student and a TA
+--           [In reality, you'd want to make this specific to a single
+--           course: no student in CIS 252 can be a TA for CIS 252 at
+--           the same time.  However, this is a toy example, so let's
+--           keep it simple.]
+--       (ii) no one can be both a student and a professor
+--
+--
+ssd1 :: SSD
+ssd1 = [(["student","ta"],2), (["student","professor"],2)]
+
+
+------------------------------------------------------------------------
+-- Example #2
+--
+--     Here we have several individuals who belong to roles related to
+--     political parties, wealth, and ethics (honesty).
+--
+--     We also associate certain permissions (think: actions or verbs)
+--     with the various roles.  These permissions include things like
+--     raising/lowering taxes, bickering, pandering, buying votes, and
+--     whistleblowing. 
+--
+
+ua2 :: UA
+ua2 = [("Reg","republican"), ("Ima","independent"), ("Del","democrat"), 
+       ("Pandora","republican"), ("Pandora","democrat"),
+       ("Roy","republican"),("Dina","democrat"),
+       ("Reg","rich"), ("Reg","honest"), ("Dina","rich"),
+       ("Ima","politician"), ("Ima","rich"), ("Ima","honest"),
+       ("Del","politician"), ("Del","honest"),
+       ("Dina","politician"),("Dina","honest")
+      ]
+
+pa2 :: PA
+pa2 = [("lower taxes","republican"), ("raise taxes","democrat"),
+       ("raise taxes","independent"), ("lower taxes","independent"),
+       ("bicker","republican"), ("bicker","democrat"), 
+       ("buy votes","rich"), ("whistleblow","honest"), ("pander","politician")
+ ]
+
+--
+--   This static separation-of-duty relation indicates that:
+--       (i) no one can be in 2 or more of the following roles:
+--            republican, democrat, independent   (i.e., everyone is
+--            associated with at most one political party)
+--
+--      (ii) no one can be in 3 or more of the following roles:
+--           rich, honest, politician
+--        That is, there is no one who is rich AND honest AND a
+--        politician.   (At least according to this SSD relation: I choose
+--        to believe there are good people in the world....)
+--
+ssd2 :: SSD
+ssd2 = [(["republican","democrat","independent"],2), 
+        (["rich","honest","politician"],3)  
+       ]
+
+
+------------------------------------------------------------------------
+-- roles user ua
+--      returns the list of roles that user assignment ua associates
+--      with user 
+------------------------------------------------------------------------
+
+roles :: User -> UA -> [Role]
+roles user ua = [ r | (u,r) <- ua, u == user ]
+
+------------------------------------------------------------------------
+--  Your code goes below this block
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+--
+--  Problem #1:
+--
+--    authUsers role ua
+--        returns the list of users that ua authorizes for role
+------------------------------------------------------------------------
+
+authUsers :: Role -> UA -> [User]
+authUsers role ua = [u | (u,r) <- ua, r == role]
+
+-- authUsers r ua returns the list of users that user assignment ua authorizes for role r.
+--tst1 authUsers "democrat" ua1 evaluates []
+--tst2 authUsers "democrat" ua2 evaluates ["Del","Pandora","Dina"]
+--tst3 authUsers "rich" ua2 evaluates ["Reg","Dina","Ima"]
+
+
+
+------------------------------------------------------------------------
+--
+--  Problem #2:
+--
+--    authPerms role pa
+--       returns the list of permissions that pa associates with role
+--
+------------------------------------------------------------------------
+
+authPerms :: Role -> PA -> [Perm]
+authPerms role pa = [p| (p,r) <- pa, r == role]
+
+--authPerms r pa returns the list of permissions that permission assignment pa authorizes for the role r.
+--tst1 authPerms "rich" pa2 evaluates ["buy votes"]
+--tst2 authPerms "staff" pa2 evaluates []
+--tst2 authPerms "staff" pa1 evaluates ["staff"]
+
+
+------------------------------------------------------------------------
+--
+--  Problem #3:
+--
+ --    userPerms user ua  pa
+--       returns the list of permissions that ua and pa together
+--       associate with user
+--
+--      user is granted all permissions that pa associates with at
+--      least one of the roles authorized for user by ua
+--
+------------------------------------------------------------------------
+
+userPerms :: User -> UA  -> PA -> [Perm]
+
+userPerms u ua pa = nub (concat [authPerms r pa | r <- roles u ua])
+
+--alternative approach :
+--map(\ r -> authPerms r pa) (roles u  ua)
+
+--userPerms u ua pa returns the list of permissions that the user assignment ua and permission assignment pa together grant the user u.
+
+--tst1 userPerms "Ima" ua1 pa1 evaluates []
+--tst2 userPerms "Dana" ua1 pa1 evaluates ["assist"]
+--tst3 userPerms "Reg" ua2 pa2 evaluates ["lower taxes","bicker","buy votes","whistleblow"]
+
+
+
+
+
+
+------------------------------------------------------------------------
+--
+--  Problem #4:
+--
+--    refMonitor (ua,pa) user perm
+--       determines whether the policy (ua,pa) grants user the
+--       permission perm 
+--
+------------------------------------------------------------------------
+
+refMonitor :: (UA, PA) -> User -> Perm -> Bool
+refMonitor (ua,pa) u p = elem p (userPerms u ua pa)
+
+
+--t refMonitor (ua,pa) u p determines whether policy (ua,pa) grants user u permission p.
+--tst1 refMonitor (ua1,pa1) "Ben" "assist" evaluates True
+--tst2 refMonitor (ua1,pa1) "Pandora" "sleep" evalutes False
+
+
+
+------------------------------------------------------------------------
+-- 
+--  Problem #5:
+--
+--    violation rset (rs,n)
+--       determines whether the collection of roles rset violates the
+--       separation-of-duty constraint (rs,n)
+--
+------------------------------------------------------------------------
+
+violation :: [Role] -> ([Role],Int) -> Bool
+violation rs1 (rs,n) = length (intersect rs1 rs) >=  n 
+   
+
+--iolation rs1 (rs,n) determines whether there are there are n or more roles that are in both rs1 and rs 
+--tst1 violation ["independent","democrat","honest","rich"] (["rich","honest","politician"],3) evaluates False
+--tst2 violation ["independent","politician","honest","rich"] (["rich","honest","politician"],3) evaluates True
+
+------------------------------------------------------------------------
+--
+--  Problem #6:
+--
+--    userConflicts user ua ssd 
+--       determines whether ua authorizes user for a collection of roles
+--       that violates the ssd relation
+-------------------------------------------------------------------------
+
+userConflicts :: User -> UA -> SSD -> Bool
+userConflicts user ua [] = False
+userConflicts user ua ((rs,n): rest) 
+    |violation (roles user ua) (rs,n) = True
+    |otherwise = userConflicts user ua rest  
+
+--userConflicts u ua ssd determines whether there are any separation-of-duty conflicts involving the user u, given the user assignment ua and SSD relation ssd.
+
+--tst1 userConflicts "Reg" ua1 ssd1 evaluates to False
+--tst2 userConflicts "Cal" ua1 ssd1 evaluates to True
+--tst3 userConflicts "Pandora" ua2 ssd2 evaluates True
+
+-----------------------------------------------------------------------
+--  Problem #7:
+--
+--    conflicts ua ssd 
+--       returns the list of users whom the ua authorizes for a
+--       collection of roles that violates the ssd relation
+--
+------------------------------------------------------------------------
+conflicts :: UA -> SSD -> [User]
+conflicts [] ssd = []
+conflicts ((u,r):rest) ssd
+    |userConflicts u ((u,r):rest) ssd == True = u: nub (conflicts rest ssd)
+    |otherwise = nub(conflicts rest ssd)
+
+--conflicts ua ssd returns the list of users having separation-of-duty conflicts under the user assignment ua and SSD relation ssd.
+--tst1 conflicts ua1 ssd1 evaluates to ["Cal", "Eve"]
+--tst2 conflicts ua2 ssd2 evaluates to ["Ima","Pandora","Dina"]
+--tst3 conflicts ua1 ssd2 evaluates to []
+--tst4 concat [(conflicts ua2 ssd2),(conflicts ua1 ssd1)] evaluates ["Ima","Pandora","Dina","Cal","Eve"]
