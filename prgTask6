@@ -1,0 +1,160 @@
+--Michelle Osiyah
+--maosiyah@syr.edu
+
+import Robots
+basic1, basic2, advanced1, advanced2 :: Robot
+program1,program2 :: [Instr]
+
+basic1 = Basic East (7,3) Ball
+
+basic2 = Basic South (0,0) Block
+
+advanced1 = Advanced West (-1, -2) []
+
+advanced2 = Advanced North (3,1) [Car, Car,Doll]
+
+program1 = [Grab Block, Jump (5,5), RotateRight, Forward 2, Grab Ball]
+
+program2 = [Grab Ball, Grab Block, Grab Doll, Drop Car, Backward 5]
+
+--set the variables as described in the question case
+--pt2 
+rotateR ::Direction -> Direction
+rotateR North = East
+rotateR East = South
+rotateR South = West
+rotateR West = North
+
+--from a cartesian plane when rotating to the right the direction is clockwise
+
+--                     North 
+--                       |         
+--                       |    
+--                West  -|-  East
+--                       | 
+--                       |
+--                    South
+rotateL :: Direction -> Direction
+rotateL North = West
+rotateL East = North
+rotateL South = East
+rotateL West = South
+
+--from a cartesian plane when rotating to the Left  the direction is anti-clockwise
+
+--                     North 
+--                       |    
+--                       |    
+--                West  -|-  East
+--                       | 
+--                       |
+--                    South
+
+--pt3
+forwardLoc :: Direction -> Integer -> Location -> Location
+forwardLoc _ 0 (0,0) = (0,0)
+forwardLoc North n (x,y) = (x,(n+y))
+forwardLoc East n (x,y) = ((x+n), y)
+forwardLoc West n (x,y) = ((x-n),y)
+forwardLoc South n (x,y) = (x,(y-n))
+
+--forwardLoc evaluates the next robot position based on the direction. If the robot is on the North or South, its on the Y plane. because of this the Y value is affected. towards the south the value is negative, therefore we subtract from it. in the North, we add.
+--If the robot is on the East or West, its on the x plane. because of this the x value is affected. towards the West the value is negative, therefore we subtract from it. in the East, we add.
+
+
+--pt4
+rotateRight :: Robot -> Robot
+rotateRight (Basic a b c) = Basic (rotateR a) b c
+rotateRight (Advanced a b c) = Advanced (rotateR a) b c
+
+rotateLeft :: Robot -> Robot
+rotateLeft (Basic a b c) = Basic (rotateL a) b c
+rotateLeft (Advanced a b c) = Advanced (rotateL a) b c
+
+--rotateRight rbt and rotateLeft rbt have the effect of rotating the robot rbt (respectively) right and left.
+--tst1 rotateLeft basic1: Basic North (7,3) Ball
+--tst2 rotateLeft basic2: Basic East (0,0) Block
+--tst3 rotateRight advanced1: Advanced North (3,1) []
+--tst4 rotateRight advanced2: Advanced East (3,1) [Car,Car,Doll]
+
+
+--pt5
+moveDirect :: Location -> Robot -> Robot
+moveDirect loc ( Basic a b c ) = Basic a loc c
+moveDirect loc ( Advanced  a b c ) = Advanced a loc c
+
+--moveDirect loc rbt has the effect of moving rbt directly to location loc. (The robot does not change the direction it is facing.)
+--tst1 moveDirect (6,5)  advanced1: Advanced West (6,5) []
+--tst2 moveDirect (8,9)  advanced1: Advanced West (8,9) []
+--tst3 moveDirect (8,9)  basic1: Basic East (8,9) Ball
+
+--pt6
+moveForward :: Integer -> Robot -> Robot
+moveForward n (Basic a b c) = Basic a (forwardLoc a n b) c
+moveForward n (Advanced a b c) = Advanced a (forwardLoc a n b) c
+
+--tst1  moveForward 6 basic1: Basic East (13,3) Ball
+--tst2 moveForward 6 advanced1: Advanced West (-3,1) []
+
+--moveForward n rbt has the effect of moving rbt forward n steps relative to its current location. (The robot does not change the direction it is facing.)
+
+--pt7
+grab :: Toy -> Robot -> Robot
+grab t (Basic a b c) = Basic a b t
+grab t (Advanced a b c) = Advanced a b (t: c)
+
+--grab t rbt returns the robot state obtained when rbt picks up the toy t, as follows:
+--A basic robot drops whatever toy it is holding, and picks up t.
+--An advanced robot picks up t to add to its collection of toys; it does not drop any toys.
+
+--tst1 grab Doll advanced1: Advanced West (3,1) [Doll]
+--tst2 grab Doll advanced2: Advanced North (3,1) [Doll,Car,Car,Doll]
+--tst3 grab Doll basic1: Basic East (7,3) Doll
+
+
+--pt8
+
+lose :: Toy -> Robot -> Robot
+lose t (Advanced a b c) = Advanced a b (helper1 t c)
+lose t rbt  = rbt
+
+helper1 :: Toy -> [Toy] -> [Toy]
+helper1 _ [] = []
+helper1 t c  = [x | x <- c, x /= t]
+
+--lose t rbt returns the result of rbt (potentially) dropping toys, as follows:
+-- An advanced robot drops all toys that match t (e.g., drops all balls or drops all blocks).
+-- A basic robot ignores this instruction and continues to hold on to whatever toy it currently holds.
+
+--tst1  lose Doll basic1: Basic East (7,3) Ball
+--tst2 lose Doll advanced2: Advanced North (3,1) [Car,Car]
+--pt9
+
+perform :: Instr -> Robot -> Robot
+perform (Jump y) rbt  =  moveDirect y rbt
+perform (Grab y) rbt  =  grab y rbt
+perform RotateRight rbt = rotateRight rbt
+perform RotateLeft rbt = rotateLeft rbt
+perform (Forward n) rbt  = moveForward n rbt
+perform (Backward n) rbt = moveForward (-n) rbt
+perform (Drop y) rbt = lose y rbt 
+
+--perform i rbt returns the resulting state when rbt performs the instruction i
+--tst1  perform (Jump (6,5)) basic1: Basic East (6,5) Ball
+--tst2 Perform (Grab Doll) basic1: Basic East (7,3) Ball
+--tst3 perform (Grab Doll) basic1: Basic East (7,3) Doll
+--tst4 perform (Drop  Doll) advanced2: Advanced West (3,1) []
+--tst5 perform (Drop  Doll) advanced2: Advanced North (3,1) [Car,Car]
+--pt10
+
+
+runProgram :: Robot -> [Instr]-> Robot
+runProgram rbt [] = rbt
+runProgram rbt (x:xs)  =  runProgram  (perform x rbt) xs
+
+--runProgram rbt ins returns the robot state that results when a robot rbt executes the series of instructions ins (in order, from left to right).
+--tst1 runProgram advanced1 program2: Advanced North (5,7) [Ball,Block]
+--tst2 runProgram advanced2  program2: Advanced West (8,1) [Doll,Block,Ball]
+--tst3 runProgram advanced2  program1: Advanced North (3,-4) [Doll,Block,Ball,Doll]
+--tst4 runProgram advanced2  program1: Advanced East (7,5) [Ball,Block,Car,Car,Doll]
+--tst5 runProgram basic1  program1: Basic South (5,3) Ball
