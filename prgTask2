@@ -1,0 +1,155 @@
+import Data.Char
+type BitString = String
+
+--Michelle Osiyah
+--maosiyah@syr.edu
+
+--pt1
+validBitString :: BitString -> Bool
+validBitString ""  = False
+validBitString (x:"") =  x == '1'|| x == '0'  
+validBitString (x:xs)
+     |x == '1'|| x == '0'  = True &&  validBitString xs
+     |otherwise = False 
+
+--validBitString bits determines whether bits is a valid bit string (i.e., nonempty and contains only '0's and '1's)
+
+--tst1 validBitstring "10101" evaluates to True
+--tst2 validBitstring "10p01" evaluates to False
+
+--pt2
+invertBitString :: BitString -> BitString
+invertBitString  [] = []
+invertBitString (x:xs) 
+    |x == '0' =  '1' : invertBitString xs 
+    |x == '1' = '0': invertBitString xs
+    |otherwise =  invertBitString xs
+--invertBitString bits changes the bitstring bits by replacing all zeroes with ones (andvice versa). Any non-bit characters in bits (in case it was not a valid bitstring) should be removed.
+--tst1 invertBitString "010011" evaluates to "101100"
+--tst2 invertBitString "01ee11" evaluates to "1000"
+
+--pt3
+makeNBits :: Int -> BitString -> BitString 
+makeNBits n bits
+    |n <= 0 =  "0"
+    |not (validBitString bits )= replicate n '0'
+    |length bits > n = drop (length bits - n) bits
+    |otherwise = replicate (n- length bits) '0' ++ bits
+
+--makeNBits n bits converts bits to a bitstring of length n
+--tst1 makeNBits 4 "11101" evaluates to "1101"
+--tst2 makeNBits 2 "1e101" evaluates to "00"
+--tst3 makeNBits 10 "101" evaluates to "0000000101"
+
+--pt4
+
+howManyBits :: Integer -> Integer
+howManyBits nums
+    |nums  < 0 = 0
+    |nums < 2 = 1
+    |otherwise  = 1+ howManyBits (div nums 2)
+    
+--howManyBits num calculates the minimum number of bits required to represent the nonnegative number num as an unsigned integer.
+--tst1 howManyBits 5 evaluates to 3
+--tst2 howManyBits 18 evaluates to 5
+--tst3 howManyBits (-2) evaluates to 0
+  
+
+--pt5
+addOne :: BitString -> BitString
+addOne bits
+    |not (validBitString bits) = "0"
+    |otherwise = reverse (helper (reverse bits))
+
+
+helper :: BitString -> BitString
+helper "" = ""
+helper (x:xs) 
+    |x == '0' =  '1' : xs
+    |x == '1' = '0' : helper  xs
+
+--addOne bits calculates the bitstring associated with adding one to the unsigned integer represented by bits
+--tst1 addOne "10110011" evaluates "10110100"
+--tst2 addOne "101" evaluates "110"
+--tst3 addOne "d1010110" evaluates "0"
+--tst4 addOne "1111" evaluates "0000"
+
+
+--pt6
+unsignedToDecimal :: BitString -> Integer
+unsignedToDecimal bits
+    |not (validBitString bits) = 0
+    |otherwise = toInteger (helper1  bits)
+
+helper1 :: BitString -> Int
+helper1 "" = 0
+helper1 bits  = sum [digitToInt  x*2^exp| (x,exp) <- zip bits  (reverse [0..(length bits  - 1)])]
+
+--unsignedToDecimal bits gives the decimal number corresponding to the unsigned integer interpretation of the bitstring bits
+
+--tst1 unsignedToDecimal "1100" evaluates to 12
+--tst2 unsignedToDecimal "11" evaluates to 3
+--tst3 unsignedToDecimal "10050" evaluates to 0
+
+--pt7
+decimalToUnsigned :: Integer -> BitString
+decimalToUnsigned n
+    |n <= 0 = "0"
+    |n == 1 = "1"
+    |otherwise  = reverse ( helper3 n) 
+
+helper3 :: Integer -> BitString
+helper3 n 
+    |n < 2 = show  n
+    |otherwise =  show  x ++  helper3 a
+    where
+      (a,x) = divMod n 2  
+--decimalToUnsigned num provides the shortest possible bitstring (i.e., no unnecessary leading zeroes) whose unsigned integer interpretation is the nonnegative number num. 
+--tst1 decimalToUnsigned 24 evaluates to "11000"
+--tst2 decimalToUnsigned 10 evaluates to "1010"
+--tst3 decimalToUnsigned (-1) evaluates to "0"
+--tst4 decimalToUnsigned 7 evaluates to "111"
+
+
+--pt8
+
+signedToDecimal :: Int -> BitString -> Integer
+signedToDecimal n bits
+    |not (validBitString bits) = 0
+    |otherwise = helper4 (makeNBits n bits)
+   
+
+helper4 :: BitString -> Integer
+helper4 (x:bits)
+    |x == '0' = unsignedToDecimal bits
+    |otherwise = -1* unsignedToDecimal ( addOne(invertBitString (bits)))
+--signedToDecimal n bits gives the decimal number corresponding to the n-bit signed integer interpretation of the bitstring bits. 
+
+--tst1 signedToDecimal 2 "000" evaluates 0
+--tst2 signedToDecimal 4 "010110" evaluates 6
+--tst3 signedToDecimal 9 "100100010" evaluates (-222)
+--tst4 signedToDecimal 9 "1011d101" evaluates 0
+
+--pt9
+
+decimalToSigned :: Int -> Integer -> BitString
+decimalToSigned n m
+    |n <= 0 = "Impossible"
+    |n < length (decimalToUnsigned m) = "Impossible"
+    |n > length (decimalToUnsigned m)  && m > 0  = makeNBits n (decimalToUnsigned m)
+    |otherwise =  helper5 n  m 
+
+helper5 :: Int -> Integer -> BitString
+helper5 n m = addOne (invertBitString (makeNBits n ( decimalToUnsigned (abs m))))
+
+--decimalToSigned n num evaluates to the n-bit twos-complement representation of the number num. 
+
+--tst1  decimalToSigned 4 10 evalutes to "0110"
+--tst2  decimalToSigned 4 0 evaluates to "0000"
+--tst3  decimalToSigned 8 (-28) evaluates ""11100100"
+
+
+
+
+
+
