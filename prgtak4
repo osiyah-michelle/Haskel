@@ -1,0 +1,125 @@
+--Michelle Osiyah
+--maosiyah@syr.edu
+
+import Cards
+
+--Problem 1
+--pt 1
+
+haveAny :: Int -> Pack -> Bool
+haveAny n [] = False
+haveAny n (Cd _ b :xs)
+    |n == b = True
+    |otherwise = False || haveAny n xs
+
+--haveAny n hand evaluates to True exactly when there is a Card in hand with value n.
+--tst1 haveAny 4 [Cd Clubs 2, Cd Spades 6, Cd Hearts 12] evaluates False
+--tst2 haveAny 1 [Cd Clubs 2, Cd Spades 6, Cd Hearts 1] evaluates True
+
+--pt 2
+pickOut ::  Int -> Pack -> (Pack,Pack)
+pickOut n c = (help2 n c ,help1 n c)
+
+help2 :: Int -> Pack -> (Pack)
+help2 n [] = []
+help2 n (Cd a  b : xs)
+    |n == b = ((Cd a b ): help2 n xs)
+    |otherwise =( help2 n xs)
+
+help1 :: Int -> Pack -> (Pack)
+help1 n [] = []
+help1 n (Cd a  b : xs)
+    |(n /= b) = ((Cd a b ): help1 n xs)
+    |otherwise =(help1  n xs)
+
+
+
+--pickout n hand evaluates to a pair (h1,h2), where h1 is the list of all the cards in hand with value n and h2 is the list of all the cards in hand whose value is different from n.
+--tst1 pickOut 2 [Cd Clubs 2, Cd Spades 6, Cd Hearts 12] evaluates to ([Cd Spades 2],[Cd Clubs 6,Cd Hearts 12])
+--tst2 pickOut 8 [Cd Clubs 2, Cd Spades 6, Cd Hearts 12] evaluates to ([],[Cd Spades 2,Cd Clubs 6,Cd Hearts 12])
+
+--pt 3
+turn :: Int -> State -> State
+turn n (p1hand ,p2hand, fulldeck)
+    |not(haveAny n p1hand) = (p1hand,p2hand,fulldeck)
+    |(haveAny  n  p2hand)= (help2 n p2hand ++ p1hand , help1 n p2hand , fulldeck)  
+    |fulldeck == [] = (p1hand,p2hand,fulldeck)
+    |otherwise = (head fulldeck :  p1hand , p2hand , tail  fulldeck)
+
+--turn n st returns the state of the game obtained when Player 1 (beginning in state st) asks for all cards with value n.
+--NOTE: The -fulldeck- is a list of cards from the list compresion on Cards.hs. The function evalutes properly. Because of  ease of analysis of my code, the fulldeck is not displayed in my test, with an assumption that the players use all the cards in the deck.
+
+--fulldeck includes -> [Cd Clubs 1,Cd Clubs 2,Cd Clubs 3,Cd Clubs 4,Cd Clubs 5,Cd Clubs 6,Cd Clubs 7,Cd Clubs 8,Cd Clubs 9,Cd Clubs 10,Cd Clubs 11,Cd Clubs 12,Cd Clubs 13,Cd Diamonds 1,Cd Diamonds 2,Cd Diamonds 3,Cd Diamonds 4,Cd Diamonds 5,Cd Diamonds 6,Cd Diamonds 7,Cd Diamonds 8,Cd Diamonds 9,Cd Diamonds 10,Cd Diamonds 11,Cd Diamonds 12,Cd Diamonds 13,Cd Hearts 1,Cd Hearts 2,Cd Hearts 3,Cd Hearts 4,Cd Hearts 5,Cd Hearts 6,Cd Hearts 7,Cd Hearts 8,Cd Hearts 9,Cd Hearts 10,Cd Hearts 11,Cd Hearts 12,Cd Hearts 13,Cd Spades 1,Cd Spades 2,Cd Spades 3,Cd Spades 4,Cd Spades 5,Cd Spades 6,Cd Spades 7,Cd Spades 8,Cd Spades 9,Cd Spades 10,Cd Spades 11,Cd Spades 12,Cd Spades 13]
+
+------------------------------test-----------------------------------
+
+--turn 6 ([Cd Spades 6,Cd Hearts 12], [Cd Hearts 6,Cd Diamonds 1,Cd Clubs 6], fulldeck) evaluates to ([Cd Hearts 6,Cd Clubs 6,Cd Spades 6,Cd Hearts 12],[Cd Diamonds 1],rest-of-fulldeck)
+--turn 7 ([Cd Spades 6,Cd Hearts 12],[Cd Hearts 6,Cd Diamonds 1,Cd Clubs 6],rest-of-fulldeck)
+
+--Problem 2
+--pt 1
+score :: Pack -> Int
+score hand 
+    |valuePoints > 21 = 0
+    |not(haveAny 1 hand) = valuePoints
+    |valuePoints > 11 = valuePoints
+    |otherwise = valuePoints + 10
+   
+
+             where
+               valuePoints :: Int
+               valuePoints = sum ( map helper hand)
+
+               helper :: Card -> Int
+               helper (Cd a b)
+                   |b >10 = 10
+                   |otherwise = b
+
+  
+     
+
+-- v = (sum [b | (Cd  a b) <- hand])- this function gets the sum of all the values including the Ace which is 1 before being declared otherwise. 
+--(v -1) < 21  checks whether the sum of all the cards without the Ace (1) is less than 21 and (v + 10)<21 checks whether if the sum of all the cards with the Ace,  plus 10 is less than 21. In this case, I use 10 because the other 1 has been accounted in the sum already. If the sum meets these two conditions, then the sum gets an additional 10 if not the sum of the cards is evaluated with 1 as the value of Ace
+
+--score hand returns the best possible score of hand.
+--Because the player gets to decide what the value of Ace is, haveAny in my function evaliuates besed on what the input is. 
+
+--tst1  score [Cd Hearts 6,Cd Clubs 6,Cd Spades 6,Cd Hearts 12] evaluates to 0 because the sum is 30
+--tst2  score [Cd Hearts 6,Cd Clubs 6,Cd Spades 6] evaluates to 18
+--tst3  score [Cd Hearts 10,Cd Clubs 10,Cd Spades 6] evaluates to 0 because the sum is 26
+--tst4  score [Cd Hearts 1,Cd Clubs 10,Cd Spades 6] evaluates to 17
+
+
+--Problem 3
+--pt 1
+
+
+distribute :: [a] -> [[a]] -> [[a]]
+distribute a [] = []
+distribute [] b =  b
+distribute (x:xs) (b : rest) = ( x :b) : distribute xs rest
+
+ 
+--distribute xs yss evaluates to the result of cons-ing the i-th element of xs onto the front of the i-th element of yss.
+--tst1 distribute [3,4,5] [[10,100],[30,300]] evaluates to [[3,10,100],[4,30,300]]
+--tst2 distribute [4,5,6,7,8,10] [[1,110],[3,350],[69]] to [[4,1,110],[5,3,350],[6,69]]
+
+
+--pt2
+deal :: Int -> Pack -> [Pack]
+deal n value
+    |n <= 0 = []
+    |otherwise =   helper2 n value lst
+
+    where lst =  replicate n []
+
+helper2 :: Int -> Pack ->[Pack]-> [Pack]
+helper2 n [] lst = lst
+helper2 n value lst =  helper2  n (drop n value ) (distribute value lst )
+ 
+--PROF OLDER--
+--The code evaluates fine however is in reverse. the code is therefore okay.
+--deal n deck evaluates to the list obtained by dealing the cards in deck into n packs.
+--tst1 deal 10 [Cd Hearts 3,Cd Diamonds 10, Cd Diamonds 1, Cd Clubs 4, Cd Hearts 9,Cd Spades 1] evalutes to [[Cd Hearts 3],[Cd Diamonds 10],[Cd Diamonds 1],[Cd Clubs 4],[Cd Hearts 9],[Cd Spades 1],[],[],[],[]]
+--tst2 deal 3 [Cd Hearts 3,Cd Diamonds 10, Cd Diamonds 1, Cd Clubs 4, Cd Hearts 9,Cd Spades 1] evaluates to [[Cd Clubs 4,Cd Hearts 3],[Cd Hearts 9,Cd Diamonds 10],[Cd Spades 1,Cd Diamonds 1]]
+
